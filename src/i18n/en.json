@@ -110,7 +110,20 @@
     "selectLong": "Long list (searchable)",
     "slideOverTitle": "Slide-over",
     "slideOverBody": "A form or a detail sheet opens here without leaving the page.",
-    "option": "Option {{n}}"
+    "option": "Option {{n}}",
+    "formTitle": "Form",
+    "formIntro": "Field, TextInput, TextArea, Checkbox, Switch and the useForm hook: local validation, errors under the field, ajax JSON submit.",
+    "formName": "Name",
+    "formNameHint": "At least two characters.",
+    "formEmail": "E-mail address",
+    "formMessage": "Message",
+    "formMessagePlaceholder": "A few words…",
+    "formNotify": "Send me a notification",
+    "formAccept": "I accept the terms",
+    "formSubmit": "Send",
+    "formReset": "Reset",
+    "formSent": "Form sent: {{name}}",
+    "formDemoNote": "This demo sends nothing to the server: the submit is simulated."
   },
   "table": {
     "search": "Search the table",
@@ -172,5 +185,16 @@
     "ip": "IP",
     "detail": "Detail",
     "createdAt": "Date"
+  },
+  "form": {
+    "required": "This field is required.",
+    "email": "Invalid e-mail address.",
+    "minLength": "At least {{n}} characters.",
+    "maxLength": "At most {{n}} characters.",
+    "invalidChoice": "Value not allowed.",
+    "pattern": "Invalid format.",
+    "invalid": "The form has errors.",
+    "submitError": "Saving failed: {{reason}}",
+    "saving": "Saving…"
   }
 }

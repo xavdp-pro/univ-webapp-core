@@ -110,7 +110,20 @@
     "selectLong": "Liste longue (recherche)",
     "slideOverTitle": "Panneau latéral",
     "slideOverBody": "Un formulaire ou une fiche détaillée s'ouvre ici, sans quitter la page.",
-    "option": "Option {{n}}"
+    "option": "Option {{n}}",
+    "formTitle": "Formulaire",
+    "formIntro": "Field, TextInput, TextArea, Checkbox, Switch et le hook useForm : validation locale, erreurs sous le champ, envoi ajax en JSON.",
+    "formName": "Nom",
+    "formNameHint": "Deux caractères au minimum.",
+    "formEmail": "Adresse e-mail",
+    "formMessage": "Message",
+    "formMessagePlaceholder": "Quelques mots…",
+    "formNotify": "Recevoir une notification",
+    "formAccept": "J'accepte les conditions",
+    "formSubmit": "Envoyer",
+    "formReset": "Réinitialiser",
+    "formSent": "Formulaire envoyé : {{name}}",
+    "formDemoNote": "Cette démonstration n'envoie rien au serveur : l'envoi est simulé."
   },
   "table": {
     "search": "Rechercher dans le tableau",
@@ -172,5 +185,16 @@
     "ip": "IP",
     "detail": "Détail",
     "createdAt": "Date"
+  },
+  "form": {
+    "required": "Ce champ est obligatoire.",
+    "email": "Adresse e-mail invalide.",
+    "minLength": "Au moins {{n}} caractères.",
+    "maxLength": "Au plus {{n}} caractères.",
+    "invalidChoice": "Valeur non autorisée.",
+    "pattern": "Format invalide.",
+    "invalid": "Le formulaire contient des erreurs.",
+    "submitError": "L'enregistrement a échoué : {{reason}}",
+    "saving": "Enregistrement…"
   }
 }

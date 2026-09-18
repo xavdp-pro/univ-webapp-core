@@ -10,11 +10,13 @@ const BASE = '/api'
 const DEFAULT_TIMEOUT_MS = 15_000
 
 export class ApiError extends Error {
-  constructor(message, { status = 0, code = '' } = {}) {
+  /** `fields` maps a field name to a translation key when the API refused a form ({ error, fields }). */
+  constructor(message, { status = 0, code = '', fields = null } = {}) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.code = code
+    this.fields = fields
   }
 }
 
@@ -37,7 +39,8 @@ export async function request(path, { method = 'GET', body, headers = {}, timeou
       if (res.status === 401 && !silent401) {
         window.dispatchEvent(new CustomEvent(UNAUTHORIZED_EVENT, { detail: { reason: code || 'auth.required' } }))
       }
-      throw new ApiError(code || `common.httpError`, { status: res.status, code })
+      const fields = data.fields && typeof data.fields === 'object' ? data.fields : null
+      throw new ApiError(code || `common.httpError`, { status: res.status, code, fields })
     }
     return data
   } catch (err) {
@@ -62,4 +65,9 @@ export const api = {
     return request(qs ? `${path}?${qs}` : path)
   },
   listAuthRequests: (params) => api.list('/auth-requests', params),
+  /** Allowed users (admin): list, create, update, deactivate. */
+  listUsers: (params) => api.list('/users', params),
+  createUser: (user) => request('/users', { method: 'POST', body: user }),
+  updateUser: (email, patch) => request(`/users/${encodeURIComponent(email)}`, { method: 'PATCH', body: patch }),
+  removeUser: (email) => request(`/users/${encodeURIComponent(email)}`, { method: 'DELETE' }),
 }
