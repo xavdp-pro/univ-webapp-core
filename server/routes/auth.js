@@ -31,6 +31,17 @@ export function createAuthMiddleware(cfg) {
 }
 
 /**
+ * Role guard to chain after authMiddleware: requireRole('admin').
+ * The role comes from the signed session, itself copied from auth_users at sign-in.
+ */
+export function requireRole(...roles) {
+  return function roleMiddleware(req, res, next) {
+    if (req.user && roles.includes(req.user.role)) return next()
+    return res.status(403).json({ error: 'auth.forbidden' })
+  }
+}
+
+/**
  * @param {object} deps
  * @param {ReturnType<import('../config.js').createConfig>} deps.cfg
  * @param {ReturnType<import('../lib/authStore.js').createAuthStore>} deps.store

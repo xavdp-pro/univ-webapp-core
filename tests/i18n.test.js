@@ -29,7 +29,7 @@ describe('i18n dictionaries', () => {
   })
 
   it('every api error code has a translation', () => {
-    for (const code of ['auth.required', 'auth.sessionExpired', 'auth.accessRevoked', 'auth.emailRequired', 'auth.tooManyRequests', 'auth.linkSentIfAllowed', 'auth.sendFailed', 'auth.linkInvalid', 'auth.linkUsed', 'auth.linkExpired', 'auth.noLongerAuthorized', 'common.serverError', 'common.notFound', 'common.tooManyRequests']) {
+    for (const code of ['auth.required', 'auth.sessionExpired', 'auth.accessRevoked', 'auth.emailRequired', 'auth.tooManyRequests', 'auth.linkSentIfAllowed', 'auth.sendFailed', 'auth.linkInvalid', 'auth.linkUsed', 'auth.linkExpired', 'auth.noLongerAuthorized', 'auth.forbidden', 'common.serverError', 'common.notFound', 'common.tooManyRequests']) {
       expect(translate('fr', code)).not.toBe(code)
       expect(translate('en', code)).not.toBe(code)
     }

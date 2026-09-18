@@ -9,12 +9,13 @@ import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import cookieParser from 'cookie-parser'
 import { APP_ROOT } from './config.js'
-import { createAuthRouter, createAuthMiddleware } from './routes/auth.js'
+import { createAuthRouter, createAuthMiddleware, requireRole } from './routes/auth.js'
+import { createAuthRequestsRouter } from './routes/authRequests.js'
 
 /**
  * @param {object} deps
  * @param {ReturnType<import('./config.js').createConfig>} deps.cfg
- * @param {{ping: Function}} deps.db
+ * @param {{ping: Function, query: Function}} deps.db
  * @param {ReturnType<import('./lib/authStore.js').createAuthStore>} deps.store
  * @param {{send: Function, kind: string}} deps.mailer
  */
@@ -59,6 +60,8 @@ export function createApp({ cfg, db, store, mailer }) {
   app.get('/api/ping', authMiddleware, (req, res) => {
     res.json({ ok: true, user: req.user.email, ts: Date.now() })
   })
+  // Example list endpoint (server-mode DataTable): the magic-link request log, admin only.
+  app.use('/api/auth-requests', createAuthRequestsRouter({ db, authMiddleware, requireRole }))
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'common.notFound' }))
 

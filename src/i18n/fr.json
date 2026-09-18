@@ -82,7 +82,8 @@
     "linkInvalid": "Lien invalide",
     "linkUsed": "Ce lien a déjà été utilisé. Demandez-en un nouveau.",
     "linkExpired": "Ce lien a expiré. Demandez-en un nouveau.",
-    "noLongerAuthorized": "Cette adresse n'est plus autorisée."
+    "noLongerAuthorized": "Cette adresse n'est plus autorisée.",
+    "forbidden": "Accès réservé"
   },
   "home": {
     "title": "Bienvenue",

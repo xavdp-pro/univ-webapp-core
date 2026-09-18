@@ -82,7 +82,8 @@
     "linkInvalid": "Invalid link",
     "linkUsed": "This link has already been used. Request a new one.",
     "linkExpired": "This link has expired. Request a new one.",
-    "noLongerAuthorized": "This address is no longer allowed."
+    "noLongerAuthorized": "This address is no longer allowed.",
+    "forbidden": "Access denied"
   },
   "home": {
     "title": "Welcome",
