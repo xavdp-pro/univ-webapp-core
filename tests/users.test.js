@@ -136,6 +136,7 @@ describe('PATCH and DELETE /api/users/:email', () => {
     // No magic link for a removed address either.
     const before = mailer.sent.length
     await request(app).post('/api/auth/magic/request').send({ email: MEMBER.email })
+    await app.locals.settleAuth()
     expect(mailer.sent.length).toBe(before)
 
     const restored = await request(app).patch(`/api/users/${MEMBER.email}`).send({ active: true }).set('Cookie', cookie)
@@ -159,19 +160,57 @@ describe('PATCH and DELETE /api/users/:email', () => {
     expect(rename.status).toBe(200)
   })
 
-  it('refuses to remove or demote the last active admin', async () => {
-    // The requester's session says admin but the row was demoted meanwhile: the guard still holds.
+  it('reads the role from the database on every request: a demoted admin loses admin at once', async () => {
     const { app, cookie, store } = await asAdmin()
     await store.upsertUser(OTHER_ADMIN)
     await store.updateUser(ADMIN.email, { role: 'member' })
-    const del = await request(app).delete(`/api/users/${OTHER_ADMIN.email}`).set('Cookie', cookie)
-    expect(del.status).toBe(409)
-    expect(del.body.error).toBe('users.lastAdmin')
-    const demote = await request(app).patch(`/api/users/${OTHER_ADMIN.email}`).send({ role: 'member' }).set('Cookie', cookie)
-    expect(demote.body.error).toBe('users.lastAdmin')
-    // With two active admins, one may go.
-    await store.updateUser(ADMIN.email, { role: 'admin' })
-    expect((await request(app).delete(`/api/users/${OTHER_ADMIN.email}`).set('Cookie', cookie)).status).toBe(200)
+    const res = await request(app).get('/api/users').set('Cookie', cookie)
+    expect(res.status).toBe(403)
+  })
+
+  it('ends a deactivated user\'s session on every route, not only /me', async () => {
+    const { app, cookie, store } = await asAdmin()
+    await store.updateUser(ADMIN.email, { active: false })
+    const ping = await request(app).get('/api/ping').set('Cookie', cookie)
+    expect(ping.status).toBe(401)
+    expect(ping.body.error).toBe('auth.accessRevoked')
+    expect((await request(app).get('/api/users').set('Cookie', cookie)).status).toBe(401)
+  })
+
+  it('keeps an admin when two admins remove each other at the same moment', async () => {
+    const ctx = buildTestApp()
+    // Every store call yields to the event loop, as a MariaDB round trip does.
+    for (const [name, fn] of Object.entries(ctx.store)) {
+      if (typeof fn === 'function' && name !== 'updateUserKeepingAnAdmin') {
+        ctx.store[name] = async (...args) => { await new Promise((r) => setImmediate(r)); return fn.apply(ctx.store, args) }
+      }
+    }
+    const a = await signIn(ctx, request, ADMIN)
+    const b = await signIn(ctx, request, OTHER_ADMIN)
+    const [r1, r2] = await Promise.all([
+      request(ctx.app).delete(`/api/users/${OTHER_ADMIN.email}`).set('Cookie', a),
+      request(ctx.app).delete(`/api/users/${ADMIN.email}`).set('Cookie', b),
+    ])
+    // One wins; the other is refused (409), or finds its own access already gone (401).
+    const codes = [r1.status, r2.status]
+    expect(codes.filter((c) => c === 200)).toHaveLength(1)
+    expect(codes.find((c) => c !== 200)).toBeOneOf([401, 409])
+    expect(await ctx.store.countActiveAdmins()).toBe(1)
+  })
+
+  it('keeps an admin when two admins demote each other at the same moment', async () => {
+    const ctx = buildTestApp()
+    const a = await signIn(ctx, request, ADMIN)
+    const b = await signIn(ctx, request, OTHER_ADMIN)
+    const [r1, r2] = await Promise.all([
+      request(ctx.app).patch(`/api/users/${OTHER_ADMIN.email}`).send({ role: 'member' }).set('Cookie', a),
+      request(ctx.app).patch(`/api/users/${ADMIN.email}`).send({ role: 'member' }).set('Cookie', b),
+    ])
+    // One wins; the other is refused (409), or is no longer admin by then (403).
+    const codes = [r1.status, r2.status]
+    expect(codes.filter((c) => c === 200)).toHaveLength(1)
+    expect(codes.find((c) => c !== 200)).toBeOneOf([403, 409])
+    expect(await ctx.store.countActiveAdmins()).toBe(1)
   })
 })
 

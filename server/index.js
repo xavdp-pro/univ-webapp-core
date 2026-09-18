@@ -34,7 +34,7 @@ async function main() {
 
   const app = createApp({ cfg: config, db, store, mailer })
   const server = http.createServer(app)
-  if (config.realtimeEnabled) initRealtime(server, config)
+  if (config.realtimeEnabled) initRealtime(server, config, store)
 
   server.listen(config.port, config.host, () => {
     console.log(`${tag} API listening on http://${config.host}:${config.port} (${config.nodeEnv}, realtime ${config.realtimeEnabled ? 'on' : 'off'}, dist ${config.serveDist ? 'served' : 'not served'})`)

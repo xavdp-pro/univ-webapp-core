@@ -41,8 +41,16 @@ export function buildTestApp({ env = {}, dbUp = true, mailer, clock, db } = {}) 
 export async function signIn(ctx, request, user) {
   await ctx.store.upsertUser(user)
   await request(ctx.app).post('/api/auth/magic/request').send({ email: user.email })
+  await ctx.app.locals.settleAuth()
   const verify = await request(ctx.app).post('/api/auth/magic/verify').send({ token: ctx.mailer.lastToken() })
   return cookieOf(verify)
+}
+
+/** Posts a magic-link request and waits for the work that runs after the response. */
+export async function requestLink(app, request, email, headers = {}) {
+  const res = await request(app).post('/api/auth/magic/request').set(headers).send({ email })
+  await app.locals.settleAuth()
+  return res
 }
 
 /** Pulls the session cookie pair out of a supertest response. */

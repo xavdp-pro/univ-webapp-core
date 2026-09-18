@@ -75,9 +75,26 @@ removes it from the address bar and `POST`s `/api/auth/magic/verify {token}`,
 which sets the httpOnly session cookie. Tokens are stored as SHA-256 hashes,
 expire after `MAGIC_LINK_TTL_MINUTES` and work once. Requests are limited per
 address and per IP over `MAGIC_RATE_WINDOW_MINUTES` using `auth_request_log`,
-on top of the generic express-rate-limit on `/api` and `/api/auth`. Unknown
-addresses get the same answer as known ones. A session ends as soon as the
-address leaves `auth_users`.
+on top of the generic express-rate-limit on `/api` and `/api/auth`.
+
+**Nothing tells who is on the allowlist.** A valid request is answered at once
+with the same body, whatever the address: the lookup, the token and the mail
+run after the response, so neither the status nor the timing differs. A mail
+failure is logged (`send_failed` in `auth_request_log`), never returned.
+
+**Every request re-reads the user.** The cookie (HS256 JWT, `SESSION_DAYS`)
+only proves who signed in; `authMiddleware` then loads the row from
+`auth_users`. A deactivated address is out on its next request, on every route
+and on Socket.IO, and `requireRole` uses the current role, not the one of
+sign-in time. The cost is one indexed `SELECT` per authenticated request.
+
+**Client address.** Limiters and the request log use `req.ip`, which follows
+`TRUST_PROXY` = the exact number of proxies in front of the API: `1` behind one
+reverse proxy (nginx, or Vite in development), `2` behind Cloudflare plus
+nginx, `0` when nothing sits in front. Too high, and a client picks its
+address through `X-Forwarded-For`. `cf-connecting-ip` is used only with
+`TRUST_CLOUDFLARE_IP=true`, when Cloudflare is the only way in (a tunnel);
+anywhere else a client could send it.
 
 **Development without Mailjet:** when `MAILJET_API_KEY`/`MAILJET_API_SECRET`
 are absent and `NODE_ENV` is not `production`, the link is printed on the
@@ -99,10 +116,12 @@ form shows each message under its field; a duplicate address is `409` with
 **Remove = deactivate.** `DELETE /api/users/:email` sets `active = 0`
 (migration `002`); the row stays, shown as "removed", and can be restored
 with `PATCH { active: true }`. An inactive address gets no magic link and its
-running session ends at the next `/me`. Guards, answered `409`: an admin
+running session ends on its next request. Guards, answered `409`: an admin
 cannot remove or demote themselves (`users.cannotRemoveSelf`,
 `users.cannotDemoteSelf`); the last active admin cannot be removed or demoted
-by anyone (`users.lastAdmin`), even by a session whose role is stale.
+by anyone (`users.lastAdmin`), even by two admins removing each other at the
+same moment: the check and the write run in one transaction that locks the
+active admin rows (`store.updateUserKeepingAnAdmin`).
 
 **`AUTH_USERS` is a bootstrap list, not a mirror.** At boot the API inserts
 each listed address that has no row in `auth_users` yet, with the given name

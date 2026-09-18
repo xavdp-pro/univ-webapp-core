@@ -53,6 +53,8 @@ export function createConfig(env = process.env) {
     cookieName: env.COOKIE_NAME || `${appName.replace(/[^a-zA-Z0-9_-]/g, '_')}_session`,
     sessionDays: int(env.SESSION_DAYS, 30),
     trustProxy: int(env.TRUST_PROXY, 1),
+    // Honour cf-connecting-ip only when Cloudflare is the sole way in (tunnel); see clientIp.
+    trustCloudflareIp: String(env.TRUST_CLOUDFLARE_IP || '').toLowerCase() === 'true',
     serveDist: bool(env.SERVE_DIST),
     realtimeEnabled: bool(env.REALTIME_ENABLED),
     db: {

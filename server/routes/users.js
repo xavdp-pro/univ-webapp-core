@@ -13,7 +13,7 @@
  * so the client shows each message under its field; a duplicate address is
  * 409 with `fields.email = 'users.emailTaken'`. Guards (409): an admin cannot
  * deactivate or demote themselves, and the last active admin cannot be
- * deactivated or demoted by anyone.
+ * deactivated or demoted by anyone, even by two concurrent requests.
  */
 import { Router } from 'express'
 import { runListQuery } from '../lib/listQuery.js'
@@ -129,42 +129,34 @@ export function createUsersRouter({ db, store, authMiddleware, requireRole }) {
   })
 
   /**
-   * Shared by PATCH and DELETE: loads the target and applies the guards for a
-   * change that would demote or deactivate. Answers on refusal and returns null.
+   * Shared by PATCH and DELETE: loads the target, refuses a self-removal or a
+   * self-demotion, then writes. A change that would take an active admin away
+   * goes through store.updateUserKeepingAnAdmin, which checks that another
+   * admin remains and writes in one locked transaction: checking here and
+   * writing afterwards would let two concurrent requests remove the last two.
    */
-  async function guardedTarget(req, res, patch) {
+  async function guardedChange(req, res, patch) {
     const email = String(req.params.email || '').trim().toLowerCase()
     const target = await store.findUserAny(email)
-    if (!target) {
-      res.status(404).json({ error: 'users.notFound' })
-      return null
-    }
+    if (!target) return res.status(404).json({ error: 'users.notFound' })
     const self = req.user.email === target.email
     const deactivating = patch.active === false && target.active
     const demoting = patch.role !== undefined && patch.role !== 'admin' && target.role === 'admin'
-    if (self && deactivating) {
-      res.status(409).json({ error: 'users.cannotRemoveSelf' })
-      return null
-    }
-    if (self && demoting) {
-      res.status(409).json({ error: 'users.cannotDemoteSelf' })
-      return null
-    }
-    if ((deactivating || demoting) && target.role === 'admin' && target.active && (await store.countActiveAdmins()) <= 1) {
-      res.status(409).json({ error: 'users.lastAdmin' })
-      return null
-    }
-    return target
+    if (self && deactivating) return res.status(409).json({ error: 'users.cannotRemoveSelf' })
+    if (self && demoting) return res.status(409).json({ error: 'users.cannotDemoteSelf' })
+    const takesAnAdminAway = (deactivating || demoting) && target.role === 'admin' && target.active
+    const user = takesAnAdminAway
+      ? await store.updateUserKeepingAnAdmin(target.email, patch)
+      : await store.updateUser(target.email, patch)
+    if (!user) return res.status(409).json({ error: 'users.lastAdmin' })
+    return res.json({ ok: true, user: publicUser(user) })
   }
 
   router.patch('/:email', async (req, res) => {
     const { values, fields } = validateUserInput(req.body, { partial: true })
     if (Object.keys(fields).length) return res.status(400).json({ error: 'form.invalid', fields })
     try {
-      const target = await guardedTarget(req, res, values)
-      if (!target) return undefined
-      const user = await store.updateUser(target.email, values)
-      return res.json({ ok: true, user: publicUser(user) })
+      return await guardedChange(req, res, values)
     } catch (err) {
       console.error('[users] update failed', err.message)
       return res.status(500).json({ error: 'common.serverError' })
@@ -173,10 +165,7 @@ export function createUsersRouter({ db, store, authMiddleware, requireRole }) {
 
   router.delete('/:email', async (req, res) => {
     try {
-      const target = await guardedTarget(req, res, { active: false })
-      if (!target) return undefined
-      const user = await store.updateUser(target.email, { active: false })
-      return res.json({ ok: true, user: publicUser(user) })
+      return await guardedChange(req, res, { active: false })
     } catch (err) {
       console.error('[users] remove failed', err.message)
       return res.status(500).json({ error: 'common.serverError' })

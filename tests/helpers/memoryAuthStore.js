@@ -41,6 +41,15 @@ export function createMemoryAuthStore({ clock = { now: new Date() } } = {}) {
       u.updatedAt = new Date(clock.now)
       return this.findUserAny(email)
     },
+    /** Same contract as the SQL store: one synchronous step, so it cannot interleave. */
+    async updateUserKeepingAnAdmin(email, patch) {
+      const others = [...users.values()].filter((u) => u.role === 'admin' && u.active !== false && u.email !== email)
+      if (!others.length) return null
+      const u = users.get(email)
+      for (const key of ['displayName', 'role', 'active']) if (patch[key] !== undefined) u[key] = patch[key]
+      u.updatedAt = new Date(clock.now)
+      return { ...u }
+    },
     async countActiveAdmins() {
       return [...users.values()].filter((u) => u.role === 'admin' && u.active !== false).length
     },
@@ -71,7 +80,7 @@ export function createMemoryAuthStore({ clock = { now: new Date() } } = {}) {
       const since = clock.now.getTime() - windowMinutes * 60_000
       return log.filter(
         (r) => (email ? r.email === email : r.ip === ip)
-          && ['link_sent', 'not_authorized', 'send_failed'].includes(r.outcome)
+          && r.outcome === 'requested'
           && r.createdAt.getTime() > since,
       ).length
     },

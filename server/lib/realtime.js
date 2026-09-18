@@ -22,18 +22,26 @@ function parseCookies(header) {
 
 let io = null
 
-export function initRealtime(httpServer, cfg) {
+export function initRealtime(httpServer, cfg, store) {
   io = new Server(httpServer, { path: '/socket.io' })
 
-  io.use((socket, next) => {
+  // Same rule as authMiddleware: the cookie proves who, the database says whether and as what.
+  io.use(async (socket, next) => {
+    const token = parseCookies(socket.handshake.headers.cookie)[cfg.cookieName]
+    if (!token) return next(new Error('auth.required'))
+    let claims
     try {
-      const token = parseCookies(socket.handshake.headers.cookie)[cfg.cookieName]
-      if (!token) return next(new Error('auth.required'))
-      const user = jwt.verify(token, cfg.jwtSecret)
-      socket.user = { email: String(user.email).toLowerCase(), name: user.name || user.email, role: user.role }
-      return next()
+      claims = jwt.verify(token, cfg.jwtSecret, { algorithms: ['HS256'] })
     } catch {
       return next(new Error('auth.sessionExpired'))
+    }
+    try {
+      const user = await store.findUser(String(claims.email || '').toLowerCase())
+      if (!user) return next(new Error('auth.accessRevoked'))
+      socket.user = { email: user.email, name: user.displayName || user.email, role: user.role }
+      return next()
+    } catch {
+      return next(new Error('common.serverError'))
     }
   })
 

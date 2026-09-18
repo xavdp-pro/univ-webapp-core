@@ -14,6 +14,25 @@ function toUser(row) {
   return { ...row, active: Boolean(Number(row.active)) }
 }
 
+/** The SET clause of a user patch; only these three columns can ever be written. */
+function userSets(patch) {
+  const sets = []
+  const params = []
+  if (patch.displayName !== undefined) {
+    sets.push('display_name = ?')
+    params.push(patch.displayName)
+  }
+  if (patch.role !== undefined) {
+    sets.push('role = ?')
+    params.push(patch.role)
+  }
+  if (patch.active !== undefined) {
+    sets.push('active = ?')
+    params.push(patch.active ? 1 : 0)
+  }
+  return { sets, params }
+}
+
 /** @param {ReturnType<import('./db.js').createDb>} db */
 export function createAuthStore(db) {
   return {
@@ -56,22 +75,37 @@ export function createAuthStore(db) {
 
     /** Updates the given fields only (displayName, role, active) and returns the row. */
     async updateUser(email, patch) {
-      const sets = []
-      const params = []
-      if (patch.displayName !== undefined) {
-        sets.push('display_name = ?')
-        params.push(patch.displayName)
-      }
-      if (patch.role !== undefined) {
-        sets.push('role = ?')
-        params.push(patch.role)
-      }
-      if (patch.active !== undefined) {
-        sets.push('active = ?')
-        params.push(patch.active ? 1 : 0)
-      }
+      const { sets, params } = userSets(patch)
       if (sets.length) await db.query(`UPDATE auth_users SET ${sets.join(', ')} WHERE email = ?`, [...params, email])
       return this.findUserAny(email)
+    },
+
+    /**
+     * Demotes or deactivates an admin only if another active admin remains, as one
+     * atomic step: the active admin rows are locked (FOR UPDATE) for the whole
+     * transaction, so two admins removing each other at the same moment are
+     * serialised and the second one sees a single admin left.
+     * Resolves the updated row, or null when the change would leave no admin.
+     */
+    async updateUserKeepingAnAdmin(email, patch) {
+      const attempt = () => db.transaction(async (tx) => {
+        const admins = await tx.query(
+          "SELECT email FROM auth_users WHERE role = 'admin' AND active = 1 ORDER BY email FOR UPDATE",
+        )
+        if (!admins.some((r) => r.email !== email)) return false
+        const { sets, params } = userSets(patch)
+        if (sets.length) await tx.query(`UPDATE auth_users SET ${sets.join(', ')} WHERE email = ?`, [...params, email])
+        return true
+      })
+      let done
+      try {
+        done = await attempt()
+      } catch (err) {
+        // Two lock waits can still meet in a deadlock; InnoDB rolled one back, retry it once.
+        if (err?.code !== 'ER_LOCK_DEADLOCK') throw err
+        done = await attempt()
+      }
+      return done ? this.findUserAny(email) : null
     },
 
     async countActiveAdmins() {
@@ -124,13 +158,17 @@ export function createAuthStore(db) {
       )
     },
 
-    /** Counts link requests for an email or an ip within the window. */
+    /**
+     * Counts link requests for an email or an ip within the window. Each accepted
+     * request logs `requested` before the response, so the count never waits for
+     * the lookup or the mail that follow it.
+     */
     async countRecentRequests({ email, ip, windowMinutes }) {
       const column = email ? 'email' : 'ip'
       const rows = await db.query(
         `SELECT COUNT(*) AS n FROM auth_request_log
          WHERE ${column} = ?
-           AND outcome IN ('link_sent', 'not_authorized', 'send_failed')
+           AND outcome = 'requested'
            AND created_at > (UTC_TIMESTAMP() - INTERVAL ? MINUTE)`,
         [email || ip, windowMinutes],
       )

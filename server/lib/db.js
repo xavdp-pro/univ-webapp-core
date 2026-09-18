@@ -44,6 +44,30 @@ export function createDb(cfg) {
       const [rows] = await getPool().query(sql, params)
       return rows
     },
+    /**
+     * Runs `fn(tx)` inside one transaction on one connection; `tx.query` has the
+     * same shape as `query`. Commits when fn resolves, rolls back when it throws.
+     */
+    async transaction(fn) {
+      const conn = await getPool().getConnection()
+      try {
+        await conn.beginTransaction()
+        const tx = {
+          async query(sql, params = []) {
+            const [rows] = await conn.query(sql, params)
+            return rows
+          },
+        }
+        const result = await fn(tx)
+        await conn.commit()
+        return result
+      } catch (err) {
+        await conn.rollback().catch(() => {})
+        throw err
+      } finally {
+        conn.release()
+      }
+    },
     /** Resolves true when the database answers, false otherwise. Never throws. */
     async ping(timeoutMs = 2000) {
       try {

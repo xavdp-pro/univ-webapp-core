@@ -6,10 +6,10 @@ import path from 'node:path'
 import { existsSync } from 'node:fs'
 import express from 'express'
 import helmet from 'helmet'
-import rateLimit from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import cookieParser from 'cookie-parser'
 import { APP_ROOT } from './config.js'
-import { createAuthRouter, createAuthMiddleware, requireRole } from './routes/auth.js'
+import { createAuthRouter, createAuthMiddleware, requireRole, clientIp } from './routes/auth.js'
 import { createAuthRequestsRouter } from './routes/authRequests.js'
 import { createUsersRouter } from './routes/users.js'
 
@@ -30,9 +30,13 @@ export function createApp({ cfg, db, store, mailer }) {
   app.use(express.json({ limit: '2mb' }))
   app.use(cookieParser())
 
+  // Every limiter keys on the same address as the magic-link counters (clientIp).
+  const keyGenerator = (req) => ipKeyGenerator(clientIp(req, cfg.trustCloudflareIp))
+
   app.use('/api', rateLimit({
     windowMs: 60 * 1000,
     limit: cfg.rateLimit.apiPerMinute,
+    keyGenerator,
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     message: { error: 'common.tooManyRequests' },
@@ -40,6 +44,7 @@ export function createApp({ cfg, db, store, mailer }) {
   app.use('/api/auth', rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: cfg.rateLimit.authPer15Minutes,
+    keyGenerator,
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     message: { error: 'auth.tooManyRequests' },
@@ -54,10 +59,13 @@ export function createApp({ cfg, db, store, mailer }) {
     res.json({ appName: cfg.appName, realtimeEnabled: cfg.realtimeEnabled })
   })
 
-  app.use('/api/auth', createAuthRouter({ cfg, store, mailer }))
+  const authRouter = createAuthRouter({ cfg, store, mailer })
+  app.use('/api/auth', authRouter)
+  // Resolves when the magic-link work started after a response has finished (tests).
+  app.locals.settleAuth = authRouter.settle
 
   // Business routes of a fork go here, behind authMiddleware.
-  const authMiddleware = createAuthMiddleware(cfg)
+  const authMiddleware = createAuthMiddleware(cfg, store)
   app.get('/api/ping', authMiddleware, (req, res) => {
     res.json({ ok: true, user: req.user.email, ts: Date.now() })
   })
