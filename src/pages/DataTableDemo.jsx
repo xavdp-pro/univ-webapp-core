@@ -54,7 +54,7 @@ export default function DataTableDemo() {
   const dateTimeFmt = useMemo(() => new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' }), [locale])
 
   const clientColumns = useMemo(() => [
-    { key: 'reference', header: 'dataTableDemo.reference', sortable: true, width: '9rem', mobile: 'primary' },
+    { key: 'reference', header: 'dataTableDemo.reference', sortable: true, width: '9rem', mobile: 'primary', hideable: false },
     { key: 'label', header: 'dataTableDemo.label', sortable: true, mobile: 'secondary' },
     { key: 'category', header: 'dataTableDemo.category', sortable: true, width: '8rem', hideBelow: 'lg', render: (row) => t(`dataTableDemo.category${row.category}`), searchValue: (row) => t(`dataTableDemo.category${row.category}`) },
     {
@@ -99,7 +99,7 @@ export default function DataTableDemo() {
 
   const serverColumns = useMemo(() => [
     { key: 'createdAt', header: 'dataTableDemo.createdAt', sortable: true, width: '10rem', render: (row) => (row.createdAt ? dateTimeFmt.format(new Date(row.createdAt)) : ''), mobile: 'secondary' },
-    { key: 'email', header: 'dataTableDemo.email', sortable: true, mobile: 'primary' },
+    { key: 'email', header: 'dataTableDemo.email', sortable: true, mobile: 'primary', hideable: false },
     { key: 'outcome', header: 'dataTableDemo.outcome', sortable: true, width: '12rem', render: (row) => <Badge className={row.outcome === 'verify_ok' || row.outcome === 'link_sent' ? 'bg-success-soft text-success' : 'bg-surface-2 text-fg-muted'}>{row.outcome}</Badge> },
     { key: 'ip', header: 'dataTableDemo.ip', sortable: true, width: '9rem', hideBelow: 'lg' },
     { key: 'detail', header: 'dataTableDemo.detail', hideBelow: 'xl', mobile: 'hidden' },
@@ -124,7 +124,9 @@ export default function DataTableDemo() {
           <p className="text-xs text-fg-muted">{t('dataTableDemo.clientIntro')}</p>
         </div>
         <DataTable
+          id="demo-client"
           columns={clientColumns}
+          columnPicker
           rows={rows}
           rowKey="id"
           filters={clientFilters}
@@ -143,7 +145,9 @@ export default function DataTableDemo() {
           <p className="text-xs text-fg-muted">{t('dataTableDemo.serverIntro')}</p>
         </div>
         <DataTable
+          id="demo-server"
           columns={serverColumns}
+          columnPicker
           rowKey="id"
           fetcher={fetchAuthRequests}
           filters={serverFilters}

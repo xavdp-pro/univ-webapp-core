@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Inbox, RefreshCw, Search, X } from 'lucide-react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Columns3, Inbox, Lock, RefreshCw, RotateCcw, Search, X } from 'lucide-react'
 import { useI18n } from '../../i18n/I18nProvider'
+import useEscapeKey from '../../hooks/useEscapeKey'
 import Select from './Select'
 import ConfirmModal from './ConfirmModal'
+import { isHideable, loadHidden, saveHidden, toggleHidden, visibleColumns } from './columnVisibility'
 import {
   applyClientQuery,
   buildListParams,
@@ -39,9 +41,15 @@ import {
  * Actions: `bulkActions` (with `selectable`) and `rowActions` are
  * [{ key, label, icon, danger, confirm: { title, message, confirmLabel, confirmationText }, onAction }];
  * a destructive action declares `confirm` and goes through ConfirmModal.
+ *
+ * Column picker: `columnPicker` adds a menu to show or hide columns (a column
+ * with `hideable: false` stays); the choice is saved per `id` in localStorage
+ * (see columnVisibility.js) and "reset columns" clears it.
  */
 export default function DataTable({
-  columns = [],
+  id,
+  columns: allColumns = [],
+  columnPicker = false,
   rows: inputRows,
   rowKey = 'id',
   fetcher,
@@ -80,6 +88,13 @@ export default function DataTable({
   const [selected, setSelected] = useState(() => new Set())
   const [pendingAction, setPendingAction] = useState(null)
   const [actionBusy, setActionBusy] = useState(false)
+  const [hidden, setHidden] = useState(() => (columnPicker ? loadHidden(id, allColumns) : []))
+  const columns = useMemo(() => (columnPicker ? visibleColumns(allColumns, hidden) : allColumns), [allColumns, hidden, columnPicker])
+
+  function setHiddenColumns(next) {
+    setHidden(next)
+    saveHidden(id, next)
+  }
 
   // Server mode state: previous rows stay on screen while the next page loads.
   const [serverRows, setServerRows] = useState([])
@@ -231,7 +246,7 @@ export default function DataTable({
 
   return (
     <div className={`min-w-0 ${className}`}>
-      {(searchable || filterDefinitions.length > 0 || toolbar) && (
+      {(searchable || filterDefinitions.length > 0 || toolbar || columnPicker) && (
         <div className="mb-3 flex flex-wrap items-center gap-2">
           {searchable && (
             <div className="relative min-w-0 flex-1 basis-56">
@@ -276,6 +291,15 @@ export default function DataTable({
             <button type="button" onClick={clearNarrowing} className="inline-flex items-center gap-1 rounded-md px-2 py-2 text-xs font-medium text-fg-muted hover:bg-surface-2 hover:text-fg">
               <X size={13} /> {t('table.resetFilters')}
             </button>
+          )}
+          {columnPicker && (
+            <ColumnPicker
+              columns={allColumns}
+              hidden={hidden}
+              onToggle={(key) => setHiddenColumns(toggleHidden(hidden, key, allColumns))}
+              onReset={() => setHiddenColumns([])}
+              t={t}
+            />
           )}
           {toolbar}
         </div>
@@ -502,6 +526,74 @@ export default function DataTable({
         onCancel={() => setPendingAction(null)}
         onConfirm={confirmPending}
       />
+    </div>
+  )
+}
+
+/** Show/hide menu of the column picker: checkboxes in a popover, never a native select. */
+function ColumnPicker({ columns, hidden, onToggle, onReset, t }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  const menuId = useId()
+
+  useEscapeKey(() => setOpen(false), open)
+
+  useEffect(() => {
+    if (!open) return undefined
+    function onDocMouseDown(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDocMouseDown)
+    return () => document.removeEventListener('mousedown', onDocMouseDown)
+  }, [open])
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-controls={menuId}
+        className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-2 text-xs font-medium ${hidden.length ? 'border-accent/40 text-accent' : 'border-line text-fg-muted hover:bg-surface-2 hover:text-fg'}`}
+        title={t('table.columnsMenu')}
+      >
+        <Columns3 size={14} />
+        <span>{t('table.columns')}</span>
+        {hidden.length > 0 && <span className="rounded-full bg-accent-soft px-1.5 text-[10px] font-bold">{hidden.length}</span>}
+      </button>
+      {open && (
+        <div id={menuId} role="group" aria-label={t('table.columnsMenu')} className="absolute right-0 z-50 mt-1 w-56 rounded-md border border-line bg-surface p-1 shadow-lg">
+          <ul className="thin-scrollbar max-h-64 overflow-auto py-1">
+            {columns.map((column) => {
+              const locked = !isHideable(column)
+              const checked = locked || !hidden.includes(column.key)
+              return (
+                <li key={column.key}>
+                  <label className={`flex items-center gap-2 rounded px-2 py-1.5 text-sm ${locked ? 'text-fg-faint' : 'text-fg hover:bg-surface-2'}`}>
+                    <input type="checkbox" checked={checked} disabled={locked} onChange={() => onToggle(column.key)} className="accent-accent" />
+                    <span className="min-w-0 flex-1 truncate">{column.header ? t(column.header) : column.key}</span>
+                    {locked && <Lock size={12} className="shrink-0" aria-label={t('table.columnLocked')} />}
+                  </label>
+                </li>
+              )
+            })}
+          </ul>
+          <div className="border-t border-line p-1">
+            <button
+              type="button"
+              onClick={() => {
+                onReset()
+                setOpen(false)
+              }}
+              disabled={hidden.length === 0}
+              className="flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-left text-xs font-medium text-fg-muted hover:bg-surface-2 hover:text-fg disabled:opacity-50"
+            >
+              <RotateCcw size={12} /> {t('table.resetColumns')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

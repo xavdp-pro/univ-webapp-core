@@ -147,7 +147,11 @@
     "sortDesc": "Sort descending",
     "sortNone": "Clear sorting",
     "confirmTitle": "Confirm this action?",
-    "confirmMessage": "{{n}} item(s) affected."
+    "confirmMessage": "{{n}} item(s) affected.",
+    "columns": "Columns",
+    "columnsMenu": "Show or hide columns",
+    "resetColumns": "Reset columns",
+    "columnLocked": "Always shown"
   },
   "dataTableDemo": {
     "title": "Data table",

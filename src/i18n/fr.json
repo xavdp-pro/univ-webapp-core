@@ -147,7 +147,11 @@
     "sortDesc": "Trier par ordre décroissant",
     "sortNone": "Annuler le tri",
     "confirmTitle": "Confirmer l'action ?",
-    "confirmMessage": "{{n}} élément(s) concerné(s)."
+    "confirmMessage": "{{n}} élément(s) concerné(s).",
+    "columns": "Colonnes",
+    "columnsMenu": "Afficher ou masquer des colonnes",
+    "resetColumns": "Réinitialiser les colonnes",
+    "columnLocked": "Toujours visible"
   },
   "dataTableDemo": {
     "title": "Tableau de données",
