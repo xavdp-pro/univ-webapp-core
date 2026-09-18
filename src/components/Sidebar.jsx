@@ -71,6 +71,11 @@ export default function Sidebar({ appName, mobileOpen, onMobileClose, onNavigate
 
   const iconOnly = collapsed && !mobileOpen
 
+  // Items may be restricted to roles; a group left empty disappears.
+  const visibleNav = nav
+    .map((group) => ({ ...group, items: group.items.filter((item) => !item.roles || item.roles.includes(user?.role)) }))
+    .filter((group) => group.items.length > 0)
+
   return (
     <aside
       className={[
@@ -98,7 +103,7 @@ export default function Sidebar({ appName, mobileOpen, onMobileClose, onNavigate
       </div>
 
       <nav className="thin-scrollbar flex-1 space-y-1 overflow-y-auto overflow-x-hidden p-2 pb-4">
-        {nav.map((group) => (
+        {visibleNav.map((group) => (
           <div key={group.id} className="mt-1">
             {!iconOnly && (
               <button

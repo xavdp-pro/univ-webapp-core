@@ -22,15 +22,16 @@ lucide-react, framer-motion. Tests: vitest + supertest. Processes: PM2.
 | `server/index.js` | boots the real app: db, seeding of allowed users, optional Socket.IO, listen |
 | `server/routes/auth.js` | magic-link request / verify / logout / me; `createAuthMiddleware`, `requireRole` |
 | `server/routes/authRequests.js` | example list endpoint `GET /api/auth-requests` (admin) built on `listQuery` |
-| `server/lib/` | `db.js` (pool, `ping`), `authStore.js` (SQL behind the auth routes), `mailer.js` (Mailjet or console), `tokens.js`, `realtime.js`, `listQuery.js` (safe sort/search/paging for list endpoints) |
-| `server/migrations/` | numbered `.sql` files and the runner (`npm run migrate`) |
+| `server/routes/users.js` | `GET/POST/PATCH/DELETE /api/users` (admin): the allowlist managed from the app |
+| `server/lib/` | `db.js` (pool, `ping`), `authStore.js` (SQL behind the auth and users routes), `seedUsers.js` (the `AUTH_USERS` bootstrap rule), `mailer.js` (Mailjet or console), `tokens.js`, `realtime.js`, `listQuery.js` (safe sort/search/paging for list endpoints) |
+| `server/migrations/` | numbered `.sql` files and the runner (`npm run migrate`); `002` adds `active` and `updated_at` to `auth_users` |
 | `src/App.jsx` | routes: `/login`, then everything else behind `ProtectedRoute` inside `Layout` |
 | `src/components/` | `Layout`, `Sidebar` (fed by `src/data/nav.js` + `iconMap.js`), `ProtectedRoute`, `LanguageSwitcher` |
-| `src/components/ui/` | `ConfirmModal`, `SlideOver`, `Select`, `ToastHost`, `ThemeToggle`, `DataTable` (+ `dataTableUtils.js`) |
-| `src/pages/` | `Login`, `MagicLink`, `Home`, `Components` (living catalogue of the primitives), `DataTableDemo` |
+| `src/components/ui/` | `ConfirmModal`, `SlideOver`, `Select`, `ToastHost`, `ThemeToggle`, `DataTable` (+ `dataTableUtils.js`, `columnVisibility.js`), forms: `Field`, `TextInput`, `TextArea`, `Checkbox`/`Switch`, `useForm` (+ `formValidators.js`) |
+| `src/pages/` | `Login`, `MagicLink`, `Home`, `Components` (living catalogue of the primitives), `DataTableDemo`, `AdminUsers` (`/admin/users`) |
 | `src/api/client.js` | fetch wrapper: JSON, cookie, timeout, 401 → back to login with the reason |
 | `src/i18n/` | `fr.json` (default), `en.json`, `translate()`, `I18nProvider` |
-| `tests/` | config guard, health with db down, full magic-link flow, UI rules, i18n parity, `listQuery`, `auth-requests`, `dataTableUtils` |
+| `tests/` | config guard, health with db down, full magic-link flow, UI rules, i18n parity, `listQuery`, `auth-requests`, `dataTableUtils`, `users` (endpoints, guards, seed rule), `formValidators`, `columnVisibility` |
 | `ecosystem.config.cjs` | PM2: `<app>-api` and `<app>-vite`, named after `package.json` |
 
 ## Host convention
@@ -57,7 +58,8 @@ nginx) targets `VITE_PORT` in development and `PORT` in production with
    user and database (same name as the app).
 4. `cp .env.example .env` inside `app/` and fill it: `JWT_SECRET`, database
    settings, `AUTH_USERS`, `PUBLIC_URL`, Mailjet keys, ports.
-5. `npm install`, then `npm run migrate` to create the auth tables.
+5. `npm install`, then `npm run migrate` to create the auth tables (also after
+   pulling a new numbered migration: `002` is needed by the users page).
 6. `npm test` and `npm run build`.
 7. `pm2 start ecosystem.config.cjs` (both processes in development) or, in
    production, `SERVE_DIST=true` in `.env` and `pm2 start ecosystem.config.cjs --only <app>-api`.
@@ -67,8 +69,8 @@ nginx) targets `VITE_PORT` in development and `PORT` in production with
 ## Sign-in
 
 Magic link only. `POST /api/auth/magic/request {email}` sends a link
-`<PUBLIC_URL><LOGIN_PATH>#<token>` when the address is in `auth_users`
-(seeded from `AUTH_USERS` at boot, upsert). The page reads the fragment,
+`<PUBLIC_URL><LOGIN_PATH>#<token>` when the address is in `auth_users` and
+active (see **Users** for how the table is filled). The page reads the fragment,
 removes it from the address bar and `POST`s `/api/auth/magic/verify {token}`,
 which sets the httpOnly session cookie. Tokens are stored as SHA-256 hashes,
 expire after `MAGIC_LINK_TTL_MINUTES` and work once. Requests are limited per
@@ -81,6 +83,65 @@ address leaves `auth_users`.
 are absent and `NODE_ENV` is not `production`, the link is printed on the
 API's console (`pm2 logs <app>-api` or the terminal running `npm run dev:api`).
 In production a missing key stops the API at boot.
+
+## Users
+
+`auth_users` is the allowlist, and `/admin/users` (sidebar group
+"Administration", admins only) manages it: a server-mode `DataTable` over
+`GET /api/users`, a `SlideOver` form to add or edit (address, display name,
+role `admin` | `member`), a `ConfirmModal` to remove. Every route is behind
+`authMiddleware` + `requireRole('admin')`; the server validates (address
+shape, lowercase, `email` ≤ 190, `displayName` ≤ 120, role whitelist) and
+answers `{ error: 'form.invalid', fields: { email: 'form.email' } }` so the
+form shows each message under its field; a duplicate address is `409` with
+`fields.email = 'users.emailTaken'`.
+
+**Remove = deactivate.** `DELETE /api/users/:email` sets `active = 0`
+(migration `002`); the row stays, shown as "removed", and can be restored
+with `PATCH { active: true }`. An inactive address gets no magic link and its
+running session ends at the next `/me`. Guards, answered `409`: an admin
+cannot remove or demote themselves (`users.cannotRemoveSelf`,
+`users.cannotDemoteSelf`); the last active admin cannot be removed or demoted
+by anyone (`users.lastAdmin`), even by a session whose role is stale.
+
+**`AUTH_USERS` is a bootstrap list, not a mirror.** At boot the API inserts
+each listed address that has no row in `auth_users` yet, with the given name
+and role, and leaves every existing row alone, active or not
+(`server/lib/seedUsers.js`, `INSERT IGNORE`). Consequences, chosen as the
+least surprising set:
+
+- the first admin is created from `.env`; from then on the Users page owns
+  the table;
+- editing a name or a role in `.env` changes nothing for a user that already
+  exists: do it on the page;
+- a user removed on the page never comes back at a restart, even if the
+  address is still in `AUTH_USERS`: restore them on the page;
+- a new address in `AUTH_USERS` is added at the next restart (with
+  `--update-env`).
+
+The boot log says `AUTH_USERS: n inserted, m already known (left untouched)`.
+`tests/users.test.js` pins the rule.
+
+## Forms
+
+`Field` wraps one control with its label, hint, required mark and the error
+under it, wiring `id`, `aria-invalid` and `aria-describedby`; `inline` puts a
+`Checkbox` or `Switch` before its label. `TextInput`, `TextArea`, `Checkbox`
+and `Switch` are thin, token-coloured controls; `Select` stays the picker.
+
+`useForm({ initialValues, rules, submit, onSuccess })` holds values, touched,
+errors, `submitting` and `submitError`. `rules` maps a field to the pure
+helpers of `formValidators.js` (`required`, `email`, `minLength`,
+`maxLength`, `oneOf`, `pattern`), or pass `validate(values)`. `field(name)`
+returns the props to spread on a control, `error(name)` the message to show
+(after blur or a submit attempt). `handleSubmit` calls `preventDefault()`,
+validates, then runs `submit(values)` (an `api.*` call) or posts JSON to
+`endpoint: { method, path }`; field errors answered by the API as
+`{ error, fields }` (`ApiError.fields`) land under the matching fields, any
+other error in `submitError`. `reset(values)` reloads the form for an edit.
+The UI-rules test still wants `preventDefault()` in the file holding the
+`<form>`, so pages write `onSubmit={(e) => { e.preventDefault(); form.handleSubmit(e) }}`.
+`/components` shows the set; `/admin/users` is the real use.
 
 ## Health
 
@@ -131,6 +192,12 @@ Two modes, one API:
   sends `{ page, pageSize, sort, dir, q, f_<key> }`, debounces the search,
   drops stale answers and keeps the previous rows while the next page loads.
   `api.list(path, params)` is the matching client call.
+
+Column picker: `columnPicker` adds a "Columns" menu (checkboxes in a popover)
+to hide or show columns; a column with `hideable: false` stays. The hidden
+keys are saved per table `id` in localStorage (`datatable:<id>:hidden`, see
+`columnVisibility.js`, pure and tested, silent without storage) and the menu
+offers "reset columns". `/data-table` and `/admin/users` use it.
 
 Server side, `server/lib/listQuery.js` turns those params into SQL fragments
 without ever interpolating request text: the sort column is looked up in a

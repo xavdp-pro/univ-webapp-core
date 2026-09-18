@@ -32,6 +32,10 @@ business logic, client data and personal names. Repository names only.
 | `server/lib/listQuery.js` | crm-v1 (`src/routes/billingDocumentsRoutes.js` `buildWhere`, clamp idiom; `src/routes/logRoutes.js`), crm-v1 (`src/lib/secretsVault.js` list) | the CRMs bound the search but interpolated `LIMIT`/`OFFSET` after `Number()` and never escaped LIKE wildcards; here every request value is a bound parameter, sort comes from a whitelist map, LIKE is escaped, page size is clamped and repeated parameters are rejected |
 | `server/routes/authRequests.js` | crm-v1 (`src/routes/logRoutes.js`, admin log list) | same shape (admin-only paged log) over the mold's own `auth_request_log`; `{ rows, total }` instead of `{ logs, total }` |
 
+| `src/components/ui/Field.jsx`, `TextInput.jsx`, `TextArea.jsx`, `Checkbox.jsx`, `useForm.js`, `formValidators.js` | written for the mold (18 September 2026) | no harvest: the running apps each hand-wrote their inputs and validation. One `Field` owns label, hint, error and the aria wiring; the rules are pure so the same file could run server side; server field errors (`{ error, fields }`) map back onto the fields |
+| `src/components/ui/columnVisibility.js`, the picker in `DataTable.jsx` | written for the mold | hidden keys per table id in localStorage, `hideable: false` pins a column, reset action; the storage round trip never throws |
+| `server/routes/users.js`, `server/lib/seedUsers.js`, `server/migrations/002_users_active.sql`, `src/pages/AdminUsers.jsx` | written for the mold | the allowlist managed from the app: soft removal (`active`), self and last-admin guards, `AUTH_USERS` reduced to a bootstrap list that inserts missing rows and never updates or revives one |
+
 ## Why there is no manifest.json
 
 The V1.14 universe manifest schema (`software/schemas/universe-manifest.schema.json`)

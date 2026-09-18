@@ -3,6 +3,8 @@
  * `icon` is a key of src/components/iconMap.js: a new icon must be imported
  * from lucide-react AND mapped there, otherwise the sidebar shows the fallback.
  * `label` is an i18n key. `end` marks an exact-match route (the home page).
+ * `roles` restricts an item to those session roles; a group with no visible
+ * item is not shown.
  */
 export const nav = [
   {
@@ -12,6 +14,13 @@ export const nav = [
       { to: '/', icon: 'home', label: 'nav.home', end: true },
       { to: '/components', icon: 'blocks', label: 'nav.components' },
       { to: '/data-table', icon: 'table', label: 'nav.dataTable' },
+    ],
+  },
+  {
+    id: 'admin',
+    label: 'nav.group.admin',
+    items: [
+      { to: '/admin/users', icon: 'users', label: 'nav.users', roles: ['admin'] },
     ],
   },
 ]
