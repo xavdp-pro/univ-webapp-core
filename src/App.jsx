@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import Components from './pages/Components'
+import DataTableDemo from './pages/DataTableDemo'
 import { useRealtime } from './lib/realtime'
 
 function Shell() {
@@ -32,6 +33,7 @@ function Shell() {
           <Route element={<Layout appName={meta.appName} />}>
             <Route path="/" element={<Home />} />
             <Route path="/components" element={<Components />} />
+            <Route path="/data-table" element={<DataTableDemo />} />
             {/* Business routes of a fork go here. */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

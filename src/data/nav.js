@@ -11,6 +11,7 @@ export const nav = [
     items: [
       { to: '/', icon: 'home', label: 'nav.home', end: true },
       { to: '/components', icon: 'blocks', label: 'nav.components' },
+      { to: '/data-table', icon: 'table', label: 'nav.dataTable' },
     ],
   },
 ]

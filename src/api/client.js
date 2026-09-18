@@ -4,6 +4,8 @@
  * provider listens and sends the user back to the login page with that reason.
  * Errors carry `status` and `code` (a translation key when the API sent one).
  */
+import { toQueryString } from '../components/ui/dataTableUtils'
+
 const BASE = '/api'
 const DEFAULT_TIMEOUT_MS = 15_000
 
@@ -54,4 +56,10 @@ export const api = {
   verifyMagicLink: (token) => request('/auth/magic/verify', { method: 'POST', body: { token } }),
   logout: () => request('/auth/logout', { method: 'POST' }),
   ping: () => request('/ping'),
+  /** Generic list call for DataTable in server mode: GET <path>?page=…&sort=… -> { rows, total }. */
+  list: (path, params) => {
+    const qs = toQueryString(params)
+    return request(qs ? `${path}?${qs}` : path)
+  },
+  listAuthRequests: (params) => api.list('/auth-requests', params),
 }
