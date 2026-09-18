@@ -20,16 +20,17 @@ lucide-react, framer-motion. Tests: vitest + supertest. Processes: PM2.
 | `server/config.js` | every env read; `HOST` defaults to `127.0.0.1`; production refuses a default `JWT_SECRET` |
 | `server/app.js` | the Express app built from explicit dependencies (config, db, auth store, mailer) |
 | `server/index.js` | boots the real app: db, seeding of allowed users, optional Socket.IO, listen |
-| `server/routes/auth.js` | magic-link request / verify / logout / me |
-| `server/lib/` | `db.js` (pool, `ping`), `authStore.js` (SQL behind the auth routes), `mailer.js` (Mailjet or console), `tokens.js`, `realtime.js` |
+| `server/routes/auth.js` | magic-link request / verify / logout / me; `createAuthMiddleware`, `requireRole` |
+| `server/routes/authRequests.js` | example list endpoint `GET /api/auth-requests` (admin) built on `listQuery` |
+| `server/lib/` | `db.js` (pool, `ping`), `authStore.js` (SQL behind the auth routes), `mailer.js` (Mailjet or console), `tokens.js`, `realtime.js`, `listQuery.js` (safe sort/search/paging for list endpoints) |
 | `server/migrations/` | numbered `.sql` files and the runner (`npm run migrate`) |
 | `src/App.jsx` | routes: `/login`, then everything else behind `ProtectedRoute` inside `Layout` |
 | `src/components/` | `Layout`, `Sidebar` (fed by `src/data/nav.js` + `iconMap.js`), `ProtectedRoute`, `LanguageSwitcher` |
-| `src/components/ui/` | `ConfirmModal`, `SlideOver`, `Select`, `ToastHost`, `ThemeToggle` |
-| `src/pages/` | `Login`, `MagicLink`, `Home`, `Components` (living catalogue of the primitives) |
+| `src/components/ui/` | `ConfirmModal`, `SlideOver`, `Select`, `ToastHost`, `ThemeToggle`, `DataTable` (+ `dataTableUtils.js`) |
+| `src/pages/` | `Login`, `MagicLink`, `Home`, `Components` (living catalogue of the primitives), `DataTableDemo` |
 | `src/api/client.js` | fetch wrapper: JSON, cookie, timeout, 401 → back to login with the reason |
 | `src/i18n/` | `fr.json` (default), `en.json`, `translate()`, `I18nProvider` |
-| `tests/` | config guard, health with db down, full magic-link flow, UI rules, i18n parity |
+| `tests/` | config guard, health with db down, full magic-link flow, UI rules, i18n parity, `listQuery`, `auth-requests`, `dataTableUtils` |
 | `ecosystem.config.cjs` | PM2: `<app>-api` and `<app>-vite`, named after `package.json` |
 
 ## Host convention
@@ -108,6 +109,38 @@ French is the default.
 `src/data/nav.js` drives the sidebar. Icons are resolved by name through
 `src/components/iconMap.js`: a new icon must be imported from `lucide-react`
 **and** added to the map, or the sidebar shows the fallback circle.
+
+## Data tables
+
+`src/components/ui/DataTable.jsx` is the one table of the mold: declarative
+`columns` (`key`, `header` as an i18n key, `accessor`/`render`, `sortable`,
+`align`, `width`, `hideBelow`, `mobile` role), `rows`, `rowKey`. Headers sort
+on click (asc, desc, none, with `aria-sort`), a search box with a clear cross,
+filters rendered with `Select`, paging with a page-size choice, optional row
+selection with a bulk-action bar, row click and row actions; a destructive
+action declares `confirm` and goes through `ConfirmModal`. Skeleton, empty and
+error-with-retry states are built in. Below `md` each row becomes a card, and
+the table never overflows horizontally: cells truncate (`wrap: true` to allow
+multi-line).
+
+Two modes, one API:
+
+- **client**: pass `rows`; sorting, search, filters and paging run in memory
+  (`dataTableUtils.js`, pure and tested);
+- **server**: pass `fetcher(params)` resolving `{ rows, total }`. The component
+  sends `{ page, pageSize, sort, dir, q, f_<key> }`, debounces the search,
+  drops stale answers and keeps the previous rows while the next page loads.
+  `api.list(path, params)` is the matching client call.
+
+Server side, `server/lib/listQuery.js` turns those params into SQL fragments
+without ever interpolating request text: the sort column is looked up in a
+map written by the route (`columns: { createdAt: 'created_at' }`), the
+direction is `ASC` or `DESC`, page size is clamped (max 100), search and
+filters are bound parameters with `%` and `_` escaped (`ESCAPE '!'`).
+`runListQuery(db, { query: req.query, spec, select, from })` runs the count
+and the page and answers `{ rows, total, page, pageSize, sort, dir, q }`.
+`GET /api/auth-requests` (admin) over `auth_request_log` is the worked
+example; `/data-table` shows both modes.
 
 ## UI rules
 

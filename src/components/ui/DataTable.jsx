@@ -552,7 +552,7 @@ function Card({ row, columns, selectable, selected, onToggle, onClick, actions, 
   return (
     <li className={`flex gap-3 px-4 py-3 ${selected ? 'bg-accent-soft/60' : ''}`}>
       {selectable && (
-        <input type="checkbox" checked={selected} onChange={onToggle} aria-label={t('table.selectRow')} className="mt-1 shrink-0 accent-accent" />
+        <input type="checkbox" checked={selected} onChange={onToggle} aria-label={t('table.selectRow')} className="mt-1 shrink-0 self-start accent-accent" />
       )}
       <div
         className={`min-w-0 flex-1 ${clickable ? 'cursor-pointer' : ''}`}
