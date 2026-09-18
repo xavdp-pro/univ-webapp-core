@@ -7,7 +7,8 @@ where each part came from.
 
 ## Stack
 
-Node 22, ESM. `server/`: Express 5, helmet, express-rate-limit, cookie-parser,
+Node 22 or 24 (target 24, the active LTS; 22 gets security fixes only until
+April 2027), ESM. `server/`: Express 5, helmet, express-rate-limit, cookie-parser,
 JWT in an httpOnly cookie, MariaDB through mysql2, optional Socket.IO.
 `src/`: Vite 8, React 19, react-router 7, Tailwind 4 (`@tailwindcss/vite`),
 lucide-react, framer-motion. Tests: vitest + supertest. Processes: PM2.
@@ -124,9 +125,3 @@ npm start           # API only (serves dist/ when SERVE_DIST=true)
 npm run migrate     # apply pending server/migrations/*.sql
 npm test            # vitest
 ```
-
-## Note on dependencies
-
-`vitest` is pinned to `~4.0.18`: on npm 10.9 the `4.1.x` releases trip an
-arborist bug (`Cannot read properties of null (reading 'edgesOut')`) while
-resolving their optional peers. Move the pin once npm or vitest ships a fix.
