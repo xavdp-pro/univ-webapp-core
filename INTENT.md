@@ -14,7 +14,11 @@ and nothing they do not:
 - sign-in by magic link only, sessions in an httpOnly cookie, MariaDB tables
   created by plain SQL migrations;
 - PM2 with two processes named after the app, `.env` as the only place where
-  a host differs from another.
+  a host differs from another;
+- **development mode as the default install**: Vite with hot reload (HMR) and
+  the API under PM2 watch, so a change on the host shows up by itself. A
+  finished app goes to production on its own instance; the development
+  instance stays in development mode.
 
 A fork copies the repository, renames the app in `package.json`, adds its
 business routes and pages, and keeps everything else. When a defect is found

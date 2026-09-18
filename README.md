@@ -1,7 +1,15 @@
 # univ-webapp-core
 
-The shared mold for Shaper web apps. Fork it, rename it, add your business
-routes and pages; keep the rest. Read `INTENT.md` for what it is and is not,
+The shared mold for our Shaper web apps. Fork it, rename it, add your business
+routes and pages; keep the rest.
+
+**It installs straight into development mode.** A fresh instance runs the
+Vite dev server with hot reload (HMR) next to the API under PM2 watch: you
+edit a file on the host and the page in your browser updates by itself, or
+the API restarts by itself. That is the normal state of an instance while an
+app is being built. When the app is finished, it goes to production on its
+own instance (`SERVE_DIST=true`, API only); the development instance stays in
+development mode for the next round of work. Read `INTENT.md` for what it is and is not,
 `AGENTS.md` for the rules an agent follows inside a fork, `LINEAGE.md` for
 where each part came from.
 
@@ -12,6 +20,56 @@ April 2027), ESM. `server/`: Express 5, helmet, express-rate-limit, cookie-parse
 JWT in an httpOnly cookie, MariaDB through mysql2, optional Socket.IO.
 `src/`: Vite 8, React 19, react-router 7, Tailwind 4 (`@tailwindcss/vite`),
 lucide-react, framer-motion. Tests: vitest + supertest. Processes: PM2.
+
+## Development mode (the default install)
+
+`pm2 start ecosystem.config.cjs` starts two processes, both named after the app:
+
+| Process | What it watches | What happens on a change |
+| :--- | :--- | :--- |
+| `<app>-vite` | everything under `src/` (Vite), and `vite.config.js` (PM2) | **HMR**: the browser swaps the changed module in place, React state and scroll kept, no page reload; a change to `vite.config.js` restarts Vite |
+| `<app>-api` | `server/` (PM2 `watch`) | **PM2 watch**: the API restarts by itself, typically back within about a second |
+
+Vite serves the pages and proxies `/api/` (and `/socket.io`) to the API, so the
+browser talks to a single origin. Nothing else to run: edit, save, look.
+
+**Through a public proxy** (Cloudflare tunnel, nginx), HMR needs its websocket
+to come back through the same door:
+
+- `.env`: `VITE_ALLOWED_HOSTS=<public host>`, `VITE_HMR_HOST=<public host>`,
+  `VITE_HMR_CLIENT_PORT=443`, `PUBLIC_URL=https://<public host>`;
+- the proxy targets `VITE_PORT` and passes the websocket upgrade:
+
+```nginx
+location / {
+  proxy_pass http://127.0.0.1:<VITE_PORT>;
+  proxy_set_header Host $host;
+  proxy_set_header X-Forwarded-Proto https;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_http_version 1.1;
+  proxy_set_header Upgrade $http_upgrade;   # Vite HMR websocket
+  proxy_set_header Connection "upgrade";
+  proxy_read_timeout 3600s;
+  proxy_buffering off;
+}
+```
+
+Measured on the reference test instance behind a Cloudflare tunnel and nginx:
+a change to `src/pages/Home.jsx` showed in the open page in about 0.3 s with
+no reload; a change under `server/` restarted the API in about 1.2 s.
+
+**What the watchers do not pick up**, and what to run instead:
+
+| Change | Run |
+| :--- | :--- |
+| `.env` | `pm2 restart ecosystem.config.cjs --update-env` (a plain restart keeps the old environment) |
+| `package.json` dependencies | `npm install`, then `pm2 restart ecosystem.config.cjs` |
+| a new file in `server/migrations/` | `npm run migrate` (the API restart alone does not apply it) |
+| `ecosystem.config.cjs` | `pm2 delete ecosystem.config.cjs && pm2 start ecosystem.config.cjs` |
+
+**Production** is a separate instance of the finished app: `npm run build`,
+`SERVE_DIST=true`, `pm2 start ecosystem.config.cjs --only <app>-api`, and the
+proxy targets `PORT`. No Vite process, no watch.
 
 ## Layout
 
