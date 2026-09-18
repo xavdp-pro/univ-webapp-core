@@ -1,0 +1,113 @@
+{
+  "app": {
+    "name": "Shaper App",
+    "loading": "Loading…"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "save": "Save",
+    "delete": "Delete",
+    "search": "Search…",
+    "select": "Select…",
+    "noResults": "No results",
+    "clear": "Clear",
+    "working": "Working…",
+    "irreversible": "This action cannot be undone.",
+    "typeToConfirm": "To confirm, type {{text}} below.",
+    "serverError": "Server error",
+    "notFound": "Not found",
+    "tooManyRequests": "Too many requests, try again later.",
+    "timeout": "Timed out — server unreachable",
+    "httpError": "Error {{status}}"
+  },
+  "nav": {
+    "group": {
+      "general": "General"
+    },
+    "home": "Home",
+    "components": "Components"
+  },
+  "sidebar": {
+    "open": "Open menu",
+    "close": "Close menu",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar",
+    "session": "Session",
+    "logout": "Sign out",
+    "backToTop": "Back to top"
+  },
+  "theme": {
+    "light": "Light theme",
+    "dark": "Dark theme",
+    "enableLight": "Switch to light theme",
+    "enableDark": "Switch to dark theme"
+  },
+  "language": {
+    "switch": "Change language",
+    "fr": "Français",
+    "en": "English"
+  },
+  "login": {
+    "title": "Sign in",
+    "subtitle": "Enter your address: you will receive a sign-in link by e-mail.",
+    "email": "E-mail address",
+    "emailPlaceholder": "you@example.com",
+    "submit": "Send my link",
+    "sending": "Sending…",
+    "sentTitle": "Link sent",
+    "sentBody": "If this address is allowed, an e-mail is on its way. The link is valid for {{minutes}} minutes and works once.",
+    "resend": "Send another link",
+    "devHint": "Without Mailjet keys, the link is printed on the API console.",
+    "reason": {
+      "required": "Sign in to continue.",
+      "sessionExpired": "Your session has expired, please sign in again.",
+      "accessRevoked": "Your access has been revoked."
+    }
+  },
+  "magic": {
+    "connecting": "Signing you in…",
+    "missing": "This link is incomplete. Request a new one.",
+    "requestNew": "Request a new link"
+  },
+  "auth": {
+    "required": "Authentication required",
+    "sessionExpired": "Session expired",
+    "accessRevoked": "Access revoked",
+    "emailRequired": "E-mail address required",
+    "tooManyRequests": "Too many requests. Try again in a few minutes.",
+    "linkSentIfAllowed": "If this address is allowed, a sign-in link has just been sent.",
+    "sendFailed": "Sending the link failed. Try again in a moment.",
+    "linkInvalid": "Invalid link",
+    "linkUsed": "This link has already been used. Request a new one.",
+    "linkExpired": "This link has expired. Request a new one.",
+    "noLongerAuthorized": "This address is no longer allowed."
+  },
+  "home": {
+    "title": "Welcome",
+    "connectedAs": "Signed in as {{name}}",
+    "intro": "This skeleton is the common mold of Shaper apps: Express API, React front, magic-link sign-in. Replace this page with your first business page.",
+    "health": "API status",
+    "dbUp": "Database reachable",
+    "dbDown": "Database unreachable",
+    "realtimeOn": "Realtime enabled",
+    "realtimeOff": "Realtime disabled"
+  },
+  "components": {
+    "title": "Components",
+    "intro": "The mold's UI primitives, to reuse as they are.",
+    "openSlideOver": "Open the slide-over",
+    "openConfirm": "Open the confirmation",
+    "confirmTitle": "Delete this item?",
+    "confirmMessage": "The item will be deleted. This demo deletes nothing.",
+    "confirmed": "Action confirmed",
+    "toastSuccess": "Success toast",
+    "toastError": "Error toast",
+    "selectShort": "Short list",
+    "selectLong": "Long list (searchable)",
+    "slideOverTitle": "Slide-over",
+    "slideOverBody": "A form or a detail sheet opens here without leaving the page.",
+    "option": "Option {{n}}"
+  }
+}
