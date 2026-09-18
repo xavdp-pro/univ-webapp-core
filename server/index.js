@@ -3,16 +3,18 @@ import { config, assertProductionSecrets } from './config.js'
 import { createDb } from './lib/db.js'
 import { createAuthStore } from './lib/authStore.js'
 import { createMailer } from './lib/mailer.js'
-import { parseAuthUsers } from './lib/tokens.js'
+import { seedAllowedUsers } from './lib/seedUsers.js'
 import { initRealtime } from './lib/realtime.js'
 import { createApp } from './app.js'
 
 const tag = `[${config.appName}]`
 
 async function seedUsers(store) {
-  const users = parseAuthUsers(config.auth.seedUsers)
-  for (const u of users) await store.upsertUser(u)
-  if (users.length) console.log(`${tag} ${users.length} allowed user(s) seeded from AUTH_USERS`)
+  // Bootstrap only: inserts the addresses that have no row yet, never updates or revives one.
+  const { inserted, kept } = await seedAllowedUsers(store, config.auth.seedUsers)
+  if (inserted.length || kept.length) {
+    console.log(`${tag} AUTH_USERS: ${inserted.length} inserted, ${kept.length} already known (left untouched)`)
+  }
 }
 
 async function main() {

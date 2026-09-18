@@ -65,7 +65,7 @@ export function createConfig(env = process.env) {
       connectionLimit: int(env.DB_POOL_SIZE, 10),
     },
     auth: {
-      // email|Display Name|role,... seeded into auth_users at boot (upsert).
+      // email|Display Name|role,... inserted into auth_users at boot when missing (never updated, see lib/seedUsers.js).
       seedUsers: env.AUTH_USERS || '',
       magicLinkTtlMinutes: int(env.MAGIC_LINK_TTL_MINUTES, 15),
       maxRequestsPerEmail: int(env.MAGIC_MAX_PER_EMAIL, 5),

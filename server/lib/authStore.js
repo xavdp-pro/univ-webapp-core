@@ -7,15 +7,29 @@
  * depend on the Node process clock or timezone.
  */
 
+const USER_SELECT = 'email, display_name AS displayName, role, active, created_at AS createdAt, updated_at AS updatedAt'
+
+function toUser(row) {
+  if (!row) return null
+  return { ...row, active: Boolean(Number(row.active)) }
+}
+
 /** @param {ReturnType<import('./db.js').createDb>} db */
 export function createAuthStore(db) {
   return {
+    /** An allowed user: present and active. Inactive users are invisible to sign-in and /me. */
     async findUser(email) {
       const rows = await db.query(
-        'SELECT email, display_name AS displayName, role FROM auth_users WHERE email = ? LIMIT 1',
+        'SELECT email, display_name AS displayName, role FROM auth_users WHERE email = ? AND active = 1 LIMIT 1',
         [email],
       )
       return rows[0] || null
+    },
+
+    /** Any row, active or not, with the management fields (admin page). */
+    async findUserAny(email) {
+      const rows = await db.query(`SELECT ${USER_SELECT} FROM auth_users WHERE email = ? LIMIT 1`, [email])
+      return toUser(rows[0])
     },
 
     async upsertUser({ email, displayName, role }) {
@@ -24,6 +38,45 @@ export function createAuthStore(db) {
          ON DUPLICATE KEY UPDATE display_name = VALUES(display_name), role = VALUES(role)`,
         [email, displayName, role],
       )
+    },
+
+    /** Inserts when no row exists for the address (any status); resolves true when it did insert. */
+    async insertUserIfMissing({ email, displayName, role }) {
+      const result = await db.query(
+        'INSERT IGNORE INTO auth_users (email, display_name, role) VALUES (?, ?, ?)',
+        [email, displayName, role],
+      )
+      return result.affectedRows === 1
+    },
+
+    async createUser({ email, displayName, role }) {
+      await db.query('INSERT INTO auth_users (email, display_name, role, active) VALUES (?, ?, ?, 1)', [email, displayName, role])
+      return this.findUserAny(email)
+    },
+
+    /** Updates the given fields only (displayName, role, active) and returns the row. */
+    async updateUser(email, patch) {
+      const sets = []
+      const params = []
+      if (patch.displayName !== undefined) {
+        sets.push('display_name = ?')
+        params.push(patch.displayName)
+      }
+      if (patch.role !== undefined) {
+        sets.push('role = ?')
+        params.push(patch.role)
+      }
+      if (patch.active !== undefined) {
+        sets.push('active = ?')
+        params.push(patch.active ? 1 : 0)
+      }
+      if (sets.length) await db.query(`UPDATE auth_users SET ${sets.join(', ')} WHERE email = ?`, [...params, email])
+      return this.findUserAny(email)
+    },
+
+    async countActiveAdmins() {
+      const rows = await db.query("SELECT COUNT(*) AS n FROM auth_users WHERE role = 'admin' AND active = 1")
+      return Number(rows[0]?.n || 0)
     },
 
     async insertToken({ email, tokenHash, ttlMinutes }) {
@@ -40,7 +93,7 @@ export function createAuthStore(db) {
         `SELECT t.id, t.email, t.used_at AS usedAt, (t.expires_at < UTC_TIMESTAMP()) AS expired,
                 u.display_name AS displayName, u.role
          FROM auth_magic_tokens t
-         LEFT JOIN auth_users u ON u.email = t.email
+         LEFT JOIN auth_users u ON u.email = t.email AND u.active = 1
          WHERE t.token_hash = ? LIMIT 1`,
         [tokenHash],
       )

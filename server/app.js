@@ -11,6 +11,7 @@ import cookieParser from 'cookie-parser'
 import { APP_ROOT } from './config.js'
 import { createAuthRouter, createAuthMiddleware, requireRole } from './routes/auth.js'
 import { createAuthRequestsRouter } from './routes/authRequests.js'
+import { createUsersRouter } from './routes/users.js'
 
 /**
  * @param {object} deps
@@ -62,6 +63,8 @@ export function createApp({ cfg, db, store, mailer }) {
   })
   // Example list endpoint (server-mode DataTable): the magic-link request log, admin only.
   app.use('/api/auth-requests', createAuthRequestsRouter({ db, authMiddleware, requireRole }))
+  // Allowed users, managed from /admin/users (admin only).
+  app.use('/api/users', createUsersRouter({ db, store, authMiddleware, requireRole }))
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'common.notFound' }))
 

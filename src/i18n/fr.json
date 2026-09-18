@@ -24,11 +24,13 @@
   },
   "nav": {
     "group": {
-      "general": "Général"
+      "general": "Général",
+      "admin": "Administration"
     },
     "home": "Accueil",
     "components": "Composants",
-    "dataTable": "Tableau de données"
+    "dataTable": "Tableau de données",
+    "users": "Utilisateurs"
   },
   "sidebar": {
     "open": "Ouvrir le menu",
@@ -200,5 +202,40 @@
     "invalid": "Le formulaire contient des erreurs.",
     "submitError": "L'enregistrement a échoué : {{reason}}",
     "saving": "Enregistrement…"
+  },
+  "users": {
+    "title": "Utilisateurs",
+    "intro": "Les adresses autorisées à recevoir un lien de connexion. Retirer un utilisateur le désactive : sa session se termine et AUTH_USERS ne le recrée pas.",
+    "add": "Ajouter un utilisateur",
+    "edit": "Modifier",
+    "remove": "Retirer",
+    "restore": "Réactiver",
+    "email": "Adresse e-mail",
+    "emailHint": "Identifiant de connexion, en minuscules ; non modifiable ensuite.",
+    "displayName": "Nom affiché",
+    "role": "Rôle",
+    "roleAdmin": "Administrateur",
+    "roleMember": "Membre",
+    "status": "Statut",
+    "active": "Actif",
+    "inactive": "Retiré",
+    "createdAt": "Créé le",
+    "updatedAt": "Modifié le",
+    "filterRole": "Rôle",
+    "filterStatus": "Statut",
+    "addTitle": "Nouvel utilisateur",
+    "editTitle": "Modifier {{email}}",
+    "created": "Utilisateur ajouté : {{email}}",
+    "updated": "Utilisateur modifié : {{email}}",
+    "removed": "Utilisateur retiré : {{email}}",
+    "restored": "Utilisateur réactivé : {{email}}",
+    "removeTitle": "Retirer cet utilisateur ?",
+    "removeMessage": "{{email}} ne pourra plus se connecter ; sa session en cours se termine. Vous pourrez le réactiver.",
+    "you": "vous",
+    "emailTaken": "Cette adresse existe déjà (peut-être retirée : filtrez par statut pour la réactiver).",
+    "notFound": "Utilisateur introuvable.",
+    "cannotRemoveSelf": "Vous ne pouvez pas retirer votre propre accès.",
+    "cannotDemoteSelf": "Vous ne pouvez pas retirer votre propre rôle d'administrateur.",
+    "lastAdmin": "Impossible : il ne resterait plus aucun administrateur actif."
   }
 }

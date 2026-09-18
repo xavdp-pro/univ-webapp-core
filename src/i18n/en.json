@@ -24,11 +24,13 @@
   },
   "nav": {
     "group": {
-      "general": "General"
+      "general": "General",
+      "admin": "Administration"
     },
     "home": "Home",
     "components": "Components",
-    "dataTable": "Data table"
+    "dataTable": "Data table",
+    "users": "Users"
   },
   "sidebar": {
     "open": "Open menu",
@@ -200,5 +202,40 @@
     "invalid": "The form has errors.",
     "submitError": "Saving failed: {{reason}}",
     "saving": "Saving…"
+  },
+  "users": {
+    "title": "Users",
+    "intro": "The addresses allowed to receive a sign-in link. Removing a user deactivates it: the session ends and AUTH_USERS does not recreate it.",
+    "add": "Add a user",
+    "edit": "Edit",
+    "remove": "Remove",
+    "restore": "Restore",
+    "email": "E-mail address",
+    "emailHint": "Sign-in identifier, lowercase; cannot be changed later.",
+    "displayName": "Display name",
+    "role": "Role",
+    "roleAdmin": "Administrator",
+    "roleMember": "Member",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Removed",
+    "createdAt": "Created",
+    "updatedAt": "Updated",
+    "filterRole": "Role",
+    "filterStatus": "Status",
+    "addTitle": "New user",
+    "editTitle": "Edit {{email}}",
+    "created": "User added: {{email}}",
+    "updated": "User updated: {{email}}",
+    "removed": "User removed: {{email}}",
+    "restored": "User restored: {{email}}",
+    "removeTitle": "Remove this user?",
+    "removeMessage": "{{email}} will no longer be able to sign in; the current session ends. You can restore it later.",
+    "you": "you",
+    "emailTaken": "This address already exists (maybe removed: filter by status to restore it).",
+    "notFound": "User not found.",
+    "cannotRemoveSelf": "You cannot remove your own access.",
+    "cannotDemoteSelf": "You cannot drop your own administrator role.",
+    "lastAdmin": "Refused: no active administrator would remain."
   }
 }
