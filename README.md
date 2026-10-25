@@ -321,3 +321,7 @@ controlled activation and reconciliation; replication does not replace backup.
 Private host/provider configuration and instance state stay outside generic source.
 The distinct `univ-webapp-core-lab` companion owns work and source observations; raw dialogue,
 private topology and commercial realization code never enter public mental sources.
+
+## Dedication
+
+[Personal dedication by Xavier de Poorter](DEDICATION.md).
