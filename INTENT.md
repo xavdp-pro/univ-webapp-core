@@ -1,44 +1,48 @@
-# INTENT — univ-webapp-core
+# Intent — reusable web application class
 
-> Intent classification: CLASS (mold). Instances are the Shaper apps forked from it.
+Intent classification: CLASS / reusable web application profile.
 
-## What this is
+Give the human–AI tandem a comprehensible web application foundation for CRM,
+knowledge tools, management views and other domain services. A versioned class
+provides shared identity/authentication, API, layout, translated UI primitives,
+configuration boundaries and lifecycle conventions. A specialization supplies
+its domain interfaces, policy and state. An instance binds identity, environment,
+configuration and owned business data.
 
-The single mold from which every Shaper web app starts: CRMs, staff wikis,
-small business tools, universe front-ends. It holds the stack they all share
-and nothing they do not:
+The selected profile uses an Express API, React/Vite Workspace, private MariaDB
+and PM2 processes behind a local proxy. Other SHAPER compositions retain their
+own runtime profile: a web-application mold is not a definition requiring every
+service or logical space to be a copy of this repository.
 
-- an Express 5 API behind a local proxy, bound to `127.0.0.1`;
-- a Vite + React front with one layout, one navigation file, one set of UI
-  primitives and two dictionaries (French by default, English);
-- sign-in by magic link only, sessions in an httpOnly cookie, MariaDB tables
-  created by plain SQL migrations;
-- PM2 with two processes named after the app, `.env` as the only place where
-  a host differs from another;
-- **development mode as the default install**: Vite with hot reload (HMR) and
-  the API under PM2 watch, so a change on the host shows up by itself. A
-  finished app goes to production on its own instance; the development
-  instance stays in development mode.
+The class supports development feedback through HMR/watch and a separate durable
+production instance with explicit configuration. A profile chooses its physical
+execution envelope; public source does not carry host secrets. Reusable defects
+are repaired in their owner and versioned for consuming specializations.
 
-A fork copies the repository, renames the app in `package.json`, adds its
-business routes and pages, and keeps everything else. When a defect is found
-in the shared part, it is repaired here first and carried back to the forks.
+## Behavioral contracts
 
-## What this is not
+Use translated, accessible shared controls; submit through explicit API actions;
+provide inspectable errors and confirmation for the declared destructive effects.
+Authentication proves identity; current per-resource policy and mandate govern
+action. Each functional owner stores durable state in private MariaDB. Migrations
+are owned, ordered and recoverable; applied migrations remain immutable.
 
-- Not a framework or a package: it is copied, then owned by the fork.
-- Not a Shaper OS universe: it runs as plain Node processes under PM2, with no
-  bricks, images or Podman, so it carries no `manifest.json` (see LINEAGE.md).
-- Not a component library: only the primitives every app needs (confirm modal,
-  slide-over, select, toasts, theme toggle). Anything business-shaped stays out.
-- Not an authentication provider: the allowlist is a table in the app's own
-  database, seeded from `.env`. No passwords exist anywhere.
+The distinct univ-webapp-core-lab owns work and dialogue. Private customer/SaaS
+implementations, configuration and data remain in their respective private sources.
 
-## Rules it enforces
+## Shared source route and custody
 
-- `HOST` defaults to `127.0.0.1`; the API refuses to start in production on a
-  missing or default `JWT_SECRET`.
-- The four UI rules of 16 September 2026 (pure ajax, no `alert`/`confirm`/`prompt`,
-  no native select, searchable pickers for long lists) are checked by
-  `tests/ui-rules.test.js` on every file under `src/`.
-- Everything in the repository is written in English.
+The human–AI tandem carries intention and mandate. Read the [common composition](https://github.com/xavdp-pro/shaper-ecosystem/blob/main/chapters/10-COMPOSITION.md)
+and [glossary](https://github.com/xavdp-pro/shaper-glossary/blob/main/TERMS.md) to distinguish component, generic stem cell, specialized
+cell/service, logical space, class, specialization and instance. OS / Runtime /
+Workspace are responsibilities across these scales; logical membership, authority
+and physical placement are separate relations. Existing funit/univ/API/storage IDs
+remain compatible while current prose uses component.
+
+Each functional owner keeps durable application state in its private MariaDB.
+Partitions follow workload, retention and access needs while preserving identity,
+leases and uniqueness. Recovery coordinates consistent capture, restoration,
+controlled activation and reconciliation; replication does not replace backup.
+Private host/provider configuration and instance state stay outside generic source.
+The distinct `univ-webapp-core-lab` companion owns work and source observations; raw dialogue,
+private topology and commercial realization code never enter public mental sources.

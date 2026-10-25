@@ -19,7 +19,7 @@ then `README.md`, before touching anything.
 - `HOST` stays `127.0.0.1`. The API is reached only through the local proxy;
   never bind `0.0.0.0` to "make it reachable".
 
-## UI rules (set in stone, 16 September 2026)
+## Shared UI contracts
 
 1. Pure ajax: never a native form POST. A `<form>` is tolerated only when
    `onSubmit` calls `preventDefault()`; otherwise use a button and `api.*`.
@@ -61,3 +61,13 @@ ecosystem file and `--update-env` after a `.env` change.
 
 The human is the author; you are a `Co-Authored-By` trailer naming your engine
 and version. Small, atomic commits; tests green before each.
+
+## Source and state ownership
+
+Read [INTENT](INTENT.md) for this source's actual class and specialization, then the
+[ecosystem composition](https://github.com/xavdp-pro/shaper-ecosystem/blob/main/chapters/10-COMPOSITION.md) and [glossary](https://github.com/xavdp-pro/shaper-glossary/blob/main/TERMS.md).
+Every new product has a separate private `univ-webapp-core-lab` companion. Keep raw dialogue,
+construction evidence and private operational state outside public product source.
+All durable application state has a declared private MariaDB owner; partition by
+workload/retention need. Preserve applied schemas and runtime state until their
+own authorized implementation transition.

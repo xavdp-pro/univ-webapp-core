@@ -1,7 +1,8 @@
 # univ-webapp-core
 
-The shared mold for our Shaper web apps. Fork it, rename it, add your business
-routes and pages; keep the rest.
+A reusable web-application class/profile for the human–AI tandem. Specialize its
+shared web capabilities through owned business routes and pages; preserve lineage
+and carry reusable fixes back to their owner.
 
 **It installs straight into development mode.** A fresh instance runs the
 Vite dev server with hot reload (HMR) next to the API under PM2 watch: you
@@ -302,3 +303,21 @@ npm start           # API only (serves dist/ when SERVE_DIST=true)
 npm run migrate     # apply pending server/migrations/*.sql
 npm test            # vitest
 ```
+
+
+## Shared source route and custody
+
+The human–AI tandem carries intention and mandate. Read the [common composition](https://github.com/xavdp-pro/shaper-ecosystem/blob/main/chapters/10-COMPOSITION.md)
+and [glossary](https://github.com/xavdp-pro/shaper-glossary/blob/main/TERMS.md) to distinguish component, generic stem cell, specialized
+cell/service, logical space, class, specialization and instance. OS / Runtime /
+Workspace are responsibilities across these scales; logical membership, authority
+and physical placement are separate relations. Existing funit/univ/API/storage IDs
+remain compatible while current prose uses component.
+
+Each functional owner keeps durable application state in its private MariaDB.
+Partitions follow workload, retention and access needs while preserving identity,
+leases and uniqueness. Recovery coordinates consistent capture, restoration,
+controlled activation and reconciliation; replication does not replace backup.
+Private host/provider configuration and instance state stay outside generic source.
+The distinct `univ-webapp-core-lab` companion owns work and source observations; raw dialogue,
+private topology and commercial realization code never enter public mental sources.
