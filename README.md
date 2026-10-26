@@ -302,3 +302,7 @@ npm start           # API only (serves dist/ when SERVE_DIST=true)
 npm run migrate     # apply pending server/migrations/*.sql
 npm test            # vitest
 ```
+
+## Dedication
+
+[Personal dedication by Xavier de Poorter](DEDICATION.md).
