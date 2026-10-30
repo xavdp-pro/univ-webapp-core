@@ -10,9 +10,16 @@ its domain interfaces, policy and state. An instance binds identity, environment
 configuration and owned business data.
 
 The selected profile uses an Express API, React/Vite Workspace, private MariaDB
-and PM2 processes behind a local proxy. Other SHAPER compositions retain their
-own runtime profile: a web-application mold is not a definition requiring every
-service or logical space to be a copy of this repository.
+and PM2 processes behind a local proxy. Whenever a SHAPER service or specialized
+cell exposes a human web interface (`*-web` organite, such as `funit-vox-web`,
+`funit-crm-web`, or `funit-cockpit-web`), **this `univ-webapp-core` React + Vite
+track is the canonical default web mold**, running inside its own dedicated
+`*-web` functional Podman container and separated from the mandatory headless
+domain engine (`*-engine`). A web interface is never installed directly inside an
+outer LXC/nested membrane container, preserving inter-organite security. Headless
+engines and non-web compositions retain their own runtime profile: a
+web-application mold is not a definition requiring every headless engine or
+logical space to embed a web UI.
 
 The class supports development feedback through HMR/watch and a separate durable
 production instance with explicit configuration. A profile chooses its physical
